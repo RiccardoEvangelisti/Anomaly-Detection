@@ -175,7 +175,7 @@ class M100DataClient:
         tables = []
         # do a query for metrics of each dtype
         for dtype in unique_dtypes:
-            print(f"Retrieving data of type: {dtype}")
+            # print(f"Retrieving data of type: {dtype}")
             dtype_metrics = metrics_per_dtype[dtype]
             dtype_metrics_filter = ds.field("metric").isin(dtype_metrics)
             if common_filter is not None:
