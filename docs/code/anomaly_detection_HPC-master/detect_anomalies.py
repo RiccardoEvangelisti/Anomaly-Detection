@@ -31,8 +31,8 @@ import util
 _epochs = 2
 _batch_size = 64
 
-_base_dir = "./"
-_data_dir = _base_dir + "data/"
+_base_dir = os.path.dirname(os.path.realpath(__file__))
+_data_dir = _base_dir + "/data/"
 
 """
 Initial and final date & time of the time frame considered

@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "detect_anomalies.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/code/anomaly_detection_HPC-master/detect_anomalies.py",
+            "console": "integratedTerminal",
+            "args": "davide18 0",
+        }
+    ]
+}
