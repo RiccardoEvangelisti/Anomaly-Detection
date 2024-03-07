@@ -209,6 +209,10 @@ def main(argv):
     else:
         with open(df_file, "rb") as handle:
             df_obj = pickle.load(handle, encoding="latin1")
+            
+    print(df_obj["df"].shape[0])
+    print(len(df_obj["active_idle"]))
+    print(df_obj["active_idle"].count(1))
 
     if exp_mode == 0:
         # Semi-supervised learning with autoencoder based model

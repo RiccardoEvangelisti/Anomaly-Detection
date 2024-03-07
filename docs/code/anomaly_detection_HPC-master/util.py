@@ -692,13 +692,18 @@ def prepare_dataframe(df, remove_idle, unscaled=False):
         return (df, timestamps, idle_periods, active_idle, [], [], scaler)
 
 
-"""
-Split data set randomly
-- returns distinct test set with and w/o anomalies
-"""
-
 
 def split_dataset(df, ts_noIdle, freqGov):
+    """
+Split data set randomly
+- returns distinct test set with and w/o anomalies
+
+Args:
+    df (pd.DataFrame): data frame
+    ts_noIdle (List[datetime]): list of timestamps of active periods
+    freqGov (str): frequency governor
+"""
+
     if freqGov == "performance":
         freqGov_periods = _anomaly_periods
     elif freqGov == "powersave":
