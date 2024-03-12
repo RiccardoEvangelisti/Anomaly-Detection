@@ -858,6 +858,9 @@ def error_distribution_2_class_varyThreshold(
     abs_errors_normal_all = {}
     squared_errors_normal_all = {}
 
+    # Build a matrix of errors: each cell corresponds to the original cell value minus the predicted value:
+        # abs_errors_normal_all is simply the absolute error
+        # squared_errors_normal_all is the squared error
     for j in range(nn_all_series):
         abs_errors_normal_all[j] = []
         squared_errors_normal_all[j] = []
@@ -868,15 +871,19 @@ def error_distribution_2_class_varyThreshold(
                 (pred_normal_all[i][j] - actual_normal_all[i][j]) * (pred_normal_all[i][j] - actual_normal_all[i][j])
             )
 
-    # max abs error
+    # For every column of the (abs) error matrix, create an array "errors_normal" in which each element is the maximum error of all rows of one column
     for j in abs_errors_normal.keys():
         for i in range(len(abs_errors_normal[j])):
             if errors_normal[i] < abs_errors_normal[j][i]:
                 errors_normal[i] = abs_errors_normal[j][i]
+    
+    # Same for all normal data
     for j in abs_errors_normal_all.keys():
         for i in range(len(abs_errors_normal_all[j])):
             if errors_normal_all[i] < abs_errors_normal_all[j][i]:
                 errors_normal_all[i] = abs_errors_normal_all[j][i]
+                
+    # Same for anomal data
     for j in abs_errors_anomal.keys():
         for i in range(len(abs_errors_anomal[j])):
             if errors_anomal[i] < abs_errors_anomal[j][i]:
@@ -902,6 +909,7 @@ def error_distribution_2_class_varyThreshold(
     recalls = []
     fscores = []
     for n_perc in range(n_perc_min, n_perc_max + 2):
+        # Given a vector V of length n, the q-th percentile of V is the value q/100 of the way from the minimum to the maximum in a sorted copy of V. The values and distances of the two nearest neighbors as well as the method parameter will determine the percentile if the normalized ranking does not match the location of q exactly. This function is the same as the median if q=50, the same as the minimum if q=0 and the same as the maximum if q=100.
         error_threshold = np.percentile(np.asarray(errors_normal_all), n_perc)
         if debug:
             print("Try with percentile: %s (threshold: %s)" % (n_perc, error_threshold))
@@ -926,10 +934,10 @@ def error_distribution_2_class_varyThreshold(
         precs.append(precision_W)
         recalls.append(recall_W)
         n_percs.append(n_perc)
-        fps.append(fp)
-        fns.append(fn)
-        tps.append(tp)
-        tns.append(tn)
+        # fps.append(fp)
+        # fns.append(fn)
+        # tps.append(tp)
+        # tns.append(tn)
 
         if fscore_W > fscore_W_best:
             precision_W_best = precision_W
