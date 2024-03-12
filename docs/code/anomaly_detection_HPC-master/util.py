@@ -814,15 +814,20 @@ Analyse reconstruction errors distributions
 def error_distribution_2_class_varyThreshold(
     actual_normal, pred_normal, actual_anomal, pred_anomal, node, actual_normal_all, pred_normal_all, debug=True
 ):
+    print("len of actual_anomal {}".format(len(actual_anomal)))
     msk = np.random.rand(len(actual_anomal)) < 0.7
-    validation_set_actual_A = actual_anomal[msk]
-    test_set_actual_A = actual_anomal[~msk]
-    validation_set_pred_A = actual_anomal[msk]
-    test_set_pred_A = actual_anomal[~msk]
+    # validation_set_actual_A = actual_anomal[msk]
+    # test_set_actual_A = actual_anomal[~msk]
+    # validation_set_pred_A = actual_anomal[msk]
+    # test_set_pred_A = actual_anomal[~msk]
 
     actual_anomal_redux = actual_anomal[~msk]
     actual_anomal = actual_anomal_redux
-
+    
+    # Added code
+    pred_anomal = pred_anomal[~msk]
+    # End code added
+    
     nn_samples, nn_series = actual_normal.shape
     errors_normal = [0] * nn_samples
     abs_errors_normal = {}
@@ -871,7 +876,7 @@ def error_distribution_2_class_varyThreshold(
                 (pred_normal_all[i][j] - actual_normal_all[i][j]) * (pred_normal_all[i][j] - actual_normal_all[i][j])
             )
 
-    # For every column of the (abs) error matrix, create an array "errors_normal" in which each element is the maximum error of all rows of one column
+    # For every row of the (abs) error matrix, create an array "errors_normal" in which each element is the maximim error of all columns of one row. It's like a new column with the maximim error of each row
     for j in abs_errors_normal.keys():
         for i in range(len(abs_errors_normal[j])):
             if errors_normal[i] < abs_errors_normal[j][i]:
@@ -900,10 +905,10 @@ def error_distribution_2_class_varyThreshold(
     fscore_A_best = 0
     fscore_N_best = 0
     fscore_W_best = 0
-    fps = []
-    fns = []
-    tps = []
-    tns = []
+    # fps = []
+    # fns = []
+    # tps = []
+    # tns = []
     n_percs = []
     precs = []
     recalls = []
@@ -920,6 +925,9 @@ def error_distribution_2_class_varyThreshold(
                 predictions.append(1)
             else:
                 predictions.append(0)
+                
+        if sum(map(lambda x: x==1, predictions)) == 0:
+            print("\nWARNING: no class 1 predictions")
 
         precision_N, recall_N, fscore_N, xyz = precision_recall_fscore_support(
             classes, predictions, average="binary", pos_label=0
@@ -929,7 +937,7 @@ def error_distribution_2_class_varyThreshold(
         )
         precision_W, recall_W, fscore_W, xyz = precision_recall_fscore_support(classes, predictions, average="weighted")
 
-        tn, fp, fn, tp = confusion_matrix(classes, predictions).ravel()
+        #tn, fp, fn, tp = confusion_matrix(classes, predictions).ravel()
         fscores.append(fscore_W)
         precs.append(precision_W)
         recalls.append(recall_W)
@@ -952,7 +960,7 @@ def error_distribution_2_class_varyThreshold(
             best_threshold = n_perc
 
     if debug:
-        print("Node {} - Best result obtained with threshold {}".format(node, best_threshold))
+        print("\nNode {} - Best result obtained with threshold {}".format(node, best_threshold))
         print("Normal: precision %f, recall %f, F-score %f" % (precision_N_best, recall_N_best, fscore_N_best))
         print("Anomaly: precision %f, recall %f, F-score %f" % (precision_A_best, recall_A_best, fscore_A_best))
         print(
