@@ -882,6 +882,13 @@ def error_distribution_2_class_varyThreshold(
             if errors_normal[i] < abs_errors_normal[j][i]:
                 errors_normal[i] = abs_errors_normal[j][i]
     
+    # Added test code
+    # errors_normal2 = [0] * nn_samples
+    # nparray = np.array(list(abs_errors_normal.values())).T
+    # errors_normal2 = np.max(nparray, axis=1)
+    # print(np.array(errors_normal2 == errors_normal).all())
+    # End added code
+    
     # Same for all normal data
     for j in abs_errors_normal_all.keys():
         for i in range(len(abs_errors_normal_all[j])):
@@ -927,7 +934,7 @@ def error_distribution_2_class_varyThreshold(
                 predictions.append(0)
                 
         if sum(map(lambda x: x==1, predictions)) == 0:
-            print("\nWARNING: no class 1 predictions")
+            print("\nWARNING: no predictions of class 1")
 
         precision_N, recall_N, fscore_N, xyz = precision_recall_fscore_support(
             classes, predictions, average="binary", pos_label=0
