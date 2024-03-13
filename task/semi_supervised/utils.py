@@ -19,9 +19,9 @@ def calculate_threshold(val_ND, decoded_val_ND, val_AD, decoded_val_AD):
     max_errors_list_valid_ND = np.max(np.abs(decoded_val_ND - val_ND), axis=1)
     max_errors_list_valid_AD = np.max(np.abs(decoded_val_AD - val_AD), axis=1)
 
-    classes = val_ND.shape[0] + val_AD.shape[0]
+    classes = np.concatenate([0] * val_ND.shape[0],[1] * val_AD.shape[0])
     errors = max_errors_list_valid_ND + max_errors_list_valid_AD
-    
+
     n_perc_min = 70
     n_perc_max = 100
     best_threshold = n_perc_max
@@ -32,25 +32,26 @@ def calculate_threshold(val_ND, decoded_val_ND, val_AD, decoded_val_AD):
     precs = []
     recalls = []
     fscores = []
-    
-    
+
     for n_perc in range(n_perc_min, n_perc_max + 1):
         error_threshold = np.percentile(max_errors_list_valid_ND, n_perc)
-        
+
         predictions = []
         for e in errors:
             if e > error_threshold:
                 predictions.append(1)
             else:
                 predictions.append(0)
-                
+
         precision_val_ND, recall_val_ND, fscore_val_ND, _ = precision_recall_fscore_support(
-                classes, predictions, average="binary", pos_label=0
-            )
+            classes, predictions, average="binary", pos_label=0
+        )
         precision_val_AD, recall_val_AD, fscore_val_AD, _ = precision_recall_fscore_support(
             classes, predictions, average="binary", pos_label=1
         )
-        precision_val, recall_val, fscore_val, _ = precision_recall_fscore_support(classes, predictions, average="weighted")
+        precision_val, recall_val, fscore_val, _ = precision_recall_fscore_support(
+            classes, predictions, average="weighted"
+        )
 
         fscores.append(fscore_val)
         precs.append(precision_val)
@@ -68,11 +69,10 @@ def calculate_threshold(val_ND, decoded_val_ND, val_AD, decoded_val_AD):
             fscore_val_ND_best = fscore_val_ND
             fscore_val_AD_best = fscore_val_AD
             best_threshold = n_perc
-    
+
     print("Best threshold: {}".format(best_threshold))
-    
-    
+
     """
     21) in another function, called like test_autoencoder(), where it will be passed test_AD and test_ND: """
-    
+
     return best_threshold
