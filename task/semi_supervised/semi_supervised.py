@@ -1,10 +1,12 @@
-from keras import regularizers
-from keras.layers import Dense, Input
-from keras.models import Model
-
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 
-from utils import calculate_threshold, split_df
+from utils import autoencoder_predict, calculate_threshold, evaluate_model, model_definition, split_df
+
+"""
+ND: Normal Data
+AD: Anomalous Data
+"""
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
@@ -25,51 +27,66 @@ def main():
         # Based on the nagios signal: if equals to 1 is anomaly period."""
     df_ND, df_AD = extract_anomalous_data(df)
 
+    # Split ND data
     train_ND, val_ND, test_ND = split_df(
-        df_ND, train=TRAIN_ND_PERC, val=VAL_ND_PERC, test=TEST_ND_PERC, rand=RANDOM_STATE
+        df_ND,
+        train=TRAIN_ND_PERC,
+        val=VAL_ND_PERC,
+        test=TEST_ND_PERC,
+        rand=RANDOM_STATE,
     )
 
     # Autoencoder definition
-    input_data = Input(shape=(n_features,))
-    encoded = Dense(n_features * 10, activation="relu", activity_regularizer=regularizers.l1(1e-5))(input_data)
-    decoded = Dense(n_features, activation="linear")(encoded)
-
-    autoencoder = Model(input_data, decoded)
-    autoencoder.compile(optimizer="adam", loss="mean_absolute_error")
-    history = autoencoder.fit(
-        train_ND,
-        train_ND,  # It's using train_ND as both the input and the target since this is a reconstruction model
-        epochs=EPOCHS,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        validation_data=(val_ND, val_ND),
-        # sample_weight=np.asarray(active_idle), # not used for now
-        verbose=1,
-    )
+    autoencoder = model_definition(n_features, train_ND, val_ND, EPOCHS, BATCH_SIZE)
 
     plt.plot(autoencoder.history["loss"], label="Training Loss")
     plt.plot(autoencoder.history["val_loss"], label="Validation Loss")
     plt.legend()
     plt.show()
 
-    # Prediction
-    decoded_val_ND = autoencoder.predict(val_ND)
-    decoded_AD = autoencoder.predict(df_AD)
+    # Prediction of normal data
+    _ = autoencoder_predict(autoencoder, train_ND, "ND train")
+    decoded_test_ND = autoencoder_predict(autoencoder, test_ND, "ND test")
+    decoded_val_ND = autoencoder_predict(autoencoder, val_ND, "ND val")
 
-    # Split AD predictions
-    _, val_AD, test_AD = split_df(df_AD, train=0, val=VAL_AD_PERC, test=TEST_AD_PERC, rand=RANDOM_STATE)
+    # Prediction of anomalous data
+    decoded_AD = autoencoder_predict(autoencoder, df_AD, "AD")
+
+    # Split AD data and predictions
+    _, val_AD, test_AD = split_df(
+        df_AD,
+        train=0,
+        val=VAL_AD_PERC,
+        test=TEST_AD_PERC,
+        rand=RANDOM_STATE,
+    )
     _, decoded_val_AD, decoded_test_AD = split_df(
-        decoded_AD, train=0, val=VAL_AD_PERC, test=TEST_AD_PERC, rand=RANDOM_STATE
+        decoded_AD,
+        train=0,
+        val=VAL_AD_PERC,
+        test=TEST_AD_PERC,
+        rand=RANDOM_STATE,
     )
 
-    # Find best Threshold
-    threshold = calculate_threshold(val_ND, decoded_val_ND, val_AD, decoded_val_AD)
+    # Find best Threshold using validation sets
+    threshold, _ = calculate_threshold(
+        val_ND,
+        decoded_val_ND,
+        val_AD,
+        decoded_val_AD,
+    )
 
-    """
-    20) final test: 
-        - test on test_AD
-        - test on (unseen) test_ND
-    """
+    # Test on unseen data
+    classes_test_ND, precision_test_ND, recall_test_ND, fscore_test_ND = evaluate_model(True, test_ND, decoded_test_ND, threshold)
+    classes_test_AD, precision_test_AD, recall_test_AD, fscore_test_AD = evaluate_model(False, test_AD, decoded_test_AD, threshold)
+
+    print("ND TEST: precision = {} recall = {} fscore = {}".format(precision_test_ND, recall_test_ND, fscore_test_ND))
+    print("AD TEST: precision = {} recall = {} fscore = {}".format(precision_test_AD, recall_test_AD, fscore_test_AD))
+    
+    plt.plot(classes_test_ND, label="test ND")
+    plt.plot(classes_test_AD, label="test AD")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
