@@ -8,6 +8,16 @@ from keras import regularizers
 from keras.layers import Dense, Input
 from keras.models import Model
 
+# from query_tool import M100DataClient
+
+
+def build_dataset(node, dataset_path):
+    client = M100DataClient(dataset_path)
+    
+    df = client.query_plugins(plugins=["nagios", "ganglia"], node=node).sort_values(by="timestamp", ascending=True)
+    
+    return df
+
 
 def split_df(df, train=60, val=10, test=20, rand=None):
     if train + val + test != 100:

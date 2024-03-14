@@ -19,7 +19,7 @@
             "python": "/home/riccardo/junk_venv/bin/python3.7",
             "autoReload": {
                 "enable": true
-              }
+            }
         }
     ]
 }
