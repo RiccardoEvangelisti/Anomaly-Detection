@@ -2,12 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"Debugger Python: File corrente",
+            "type":"debugpy",
+            "request":"launch",
+            "program":"${file}",
+            "console":"integratedTerminal"
+        },
+        
+        {
             "name": "detect_anomalies.py",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/docs/code/anomaly_detection_HPC-master/detect_anomalies.py",
             "console": "integratedTerminal",
             "args": "davide18 0",
+            "python": "/home/riccardo/junk_venv/bin/python3.7",
+            "autoReload": {
+                "enable": true
+              }
         }
     ]
 }
