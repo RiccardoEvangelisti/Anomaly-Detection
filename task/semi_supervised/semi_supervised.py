@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 
 from utils import autoencoder_predict, calculate_threshold, evaluate_model, model_definition, split_df
@@ -83,8 +84,12 @@ def main():
     print("ND TEST: precision = {} recall = {} fscore = {}".format(precision_test_ND, recall_test_ND, fscore_test_ND))
     print("AD TEST: precision = {} recall = {} fscore = {}".format(precision_test_AD, recall_test_AD, fscore_test_AD))
     
-    plt.plot(classes_test_ND, label="test ND")
-    plt.plot(classes_test_AD, label="test AD")
+    # Print graph
+    classes_test_ND = pd.DataFrame(classes_test_ND, index=test_ND.index)
+    classes_test_AD = pd.DataFrame(classes_test_AD, index=test_AD.index)
+    classes_test = pd.concat((classes_test_ND, classes_test_AD), axis=0).sort_index()
+    
+    plt.plot(classes_test, label="test")
     plt.legend()
     plt.show()
 
