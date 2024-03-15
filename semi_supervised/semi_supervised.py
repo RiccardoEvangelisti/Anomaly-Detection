@@ -25,7 +25,6 @@ BATCH_SIZE = 128
 
 
 def main():
-    """- Build the complete dataset, with anomalies and with nagios column"""
 
     df = build_dataset(NODE, DATASET_PATH)
 

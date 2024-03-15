@@ -19,8 +19,9 @@ def build_dataset(node, dataset_path):
     os.path.isdir(dataset_path)
     client = M100DataClient(dataset_path)
     
-    df = client.query_plugins(plugins=["nagios", "ganglia"], node=node).sort_values(by="timestamp", ascending=True)
+    df = client.query_plugins(plugins="nagios", node=node).sort_values(by="timestamp", ascending=True)
     
+    """- Build the complete dataset, with anomalies and with nagios column"""
     return df
 
 
