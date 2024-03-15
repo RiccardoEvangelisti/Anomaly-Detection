@@ -80,8 +80,6 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     n_perc_max = 100
     best_n_perc = n_perc_max
     fscore_val_best = 0
-    fscore_val_AD_best = 0
-    fscore_val_ND_best = 0
     n_percs = []
     precs = []
     recalls = []
@@ -97,12 +95,6 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
             else:
                 predictions.append(0)
 
-        precision_val_ND, recall_val_ND, fscore_val_ND, _ = precision_recall_fscore_support(
-            classes, predictions, average="binary", pos_label=0
-        )
-        precision_val_AD, recall_val_AD, fscore_val_AD, _ = precision_recall_fscore_support(
-            classes, predictions, average="binary", pos_label=1
-        )
         precision_val, recall_val, fscore_val, _ = precision_recall_fscore_support(
             classes, predictions, average="weighted"
         )
@@ -113,15 +105,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
         n_percs.append(n_perc)
 
         if fscore_val > fscore_val_best:
-            precision_val_best = precision_val
-            precision_ND_best = precision_val_ND
-            precision_A_best = precision_val_AD
-            recall_val_best = recall_val
-            recall_val_ND_best = recall_val_ND
-            recall_val_AD_best = recall_val_AD
             fscore_val_best = fscore_val
-            fscore_val_ND_best = fscore_val_ND
-            fscore_val_AD_best = fscore_val_AD
             best_n_perc = n_perc
 
     best_error_threshold = np.percentile(max_errors_list_valid_ND, best_n_perc)
