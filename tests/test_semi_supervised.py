@@ -1,6 +1,5 @@
-import sys, logging, os
+import logging, os
 
-#sys.path.append("./task/query_tool/")  # add query_tool module
 logging.disable(logging.WARNING)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -8,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from task.semi_supervised.utils import (
+from semi_supervised.utils import (
     autoencoder_predict,
     # build_dataset,
     calculate_threshold,

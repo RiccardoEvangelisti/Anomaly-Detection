@@ -1,21 +1,20 @@
-import sys, logging, os
+import logging, os
 
-# sys.path.append("./task/query_tool/")  # add query_tool module
 logging.disable(logging.WARNING)  # disable TF logging
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from semi_supervised.utils import autoencoder_predict, build_dataset, calculate_threshold, evaluate_model, model_definition, split_df
+from utils import autoencoder_predict, build_dataset, calculate_threshold, evaluate_model, model_definition, split_df
 
 """
 ND: Normal Data
 AD: Anomalous Data
 """
 
-DATASET_PATH = "dataset/22-09/year_month=22-09"
-NODE = 10
+DATASET_PATH = "./dataset/22-09/year_month=22-09"
+NODE = "10"
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30

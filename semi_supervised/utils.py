@@ -1,3 +1,4 @@
+import os
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,6 +13,10 @@ from query_tool.query_tool import M100DataClient
 
 
 def build_dataset(node, dataset_path):
+    if not isinstance(node, str):
+        raise ValueError("node must be a string")
+    
+    os.path.isdir(dataset_path)
     client = M100DataClient(dataset_path)
     
     df = client.query_plugins(plugins=["nagios", "ganglia"], node=node).sort_values(by="timestamp", ascending=True)
@@ -130,7 +135,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     plt.xlabel("N-th percentile")
     plt.ylabel("Detection Accuracy")
     plt.legend()
-    plt.savefig("./task/semi_supervised/outputs/threshold_validation")
+    plt.savefig("./semi_supervised/outputs/threshold_validation")
     plt.show()
 
     return best_error_threshold, n_perc
