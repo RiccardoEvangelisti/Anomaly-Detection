@@ -8,7 +8,7 @@ from keras import regularizers
 from keras.layers import Dense, Input
 from keras.models import Model
 
-# from query_tool import M100DataClient
+from query_tool.query_tool import M100DataClient
 
 
 def build_dataset(node, dataset_path):

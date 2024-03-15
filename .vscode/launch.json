@@ -2,6 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Module",
+            "type": "python",
+            "request": "launch",
+            "module": "semi_supervised.semi_supervised",
+            "env": {"PYTHONPATH": "${workspaceFolder}/task/"}
+        },
+
+        {
             "name":"Debugger Python: File corrente",
             "type":"debugpy",
             "request":"launch",

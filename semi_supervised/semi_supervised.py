@@ -7,7 +7,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from utils import autoencoder_predict, build_dataset, calculate_threshold, evaluate_model, model_definition, split_df
+from semi_supervised.utils import autoencoder_predict, build_dataset, calculate_threshold, evaluate_model, model_definition, split_df
 
 """
 ND: Normal Data
