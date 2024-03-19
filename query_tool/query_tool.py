@@ -23,24 +23,14 @@ class M100DataClient:
         # loading metadata
         script_path = os.path.dirname(os.path.realpath(__file__))
 
-        self.metrics_per_plugin = pickle.load(
-            open(script_path + "/schema_metadata/metrics_per_plugin.pkl", "rb")
-        )
-        self.tags_per_metric = pickle.load(
-            open(script_path + "/schema_metadata/tags_per_metric.pkl", "rb")
-        )
-        self.dtype_per_metric = pickle.load(
-            open(script_path + "/schema_metadata/dtype_per_metric.pkl", "rb")
-        )
+        self.metrics_per_plugin = pickle.load(open(script_path + "/schema_metadata/metrics_per_plugin.pkl", "rb"))
+        self.tags_per_metric = pickle.load(open(script_path + "/schema_metadata/tags_per_metric.pkl", "rb"))
+        self.dtype_per_metric = pickle.load(open(script_path + "/schema_metadata/dtype_per_metric.pkl", "rb"))
         self.part_cols_dictionaries = pickle.load(
             open(script_path + "/schema_metadata/part_cols_dictionaries.pkl", "rb")
         )
-        self.dict_cols = pickle.load(
-            open(script_path + "/schema_metadata/dict_cols.pkl", "rb")
-        )
-        self.schema_stump = pickle.load(
-            open(script_path + "/schema_metadata/common_schema.pkl", "rb")
-        )
+        self.dict_cols = pickle.load(open(script_path + "/schema_metadata/dict_cols.pkl", "rb"))
+        self.schema_stump = pickle.load(open(script_path + "/schema_metadata/common_schema.pkl", "rb"))
 
         self.all_tags = self.schema_stump.names
 
@@ -56,27 +46,31 @@ class M100DataClient:
         # creating a pyarrow.dataset.Dataset per possible dtype of the "value" column (different schemas)
         self.dataset_per_dtype = {}
 
-        parquet_format = ds.ParquetFileFormat(
-            read_options={"dictionary_columns": self.dict_cols}
-        )
+        parquet_format = ds.ParquetFileFormat(read_options={"dictionary_columns": self.dict_cols})
 
         for dtype in self.value_dtypes:
             if dtype is None:
                 schema = self.schema_stump
             elif dtype == pa.string():
-                schema = self.schema_stump.append(
-                    pa.field("value", pa.dictionary(pa.int32(), pa.string()))
-                )
+                schema = self.schema_stump.append(pa.field("value", pa.dictionary(pa.int32(), pa.string())))
             else:
                 schema = self.schema_stump.append(pa.field("value", dtype))
 
-            part = ds.partitioning(
-                schema, flavor="hive", dictionaries=self.part_cols_dictionaries
-            )
+            part = ds.partitioning(schema, flavor="hive", dictionaries=self.part_cols_dictionaries)
 
             self.dataset_per_dtype[dtype] = ds.dataset(
                 self.path, format=parquet_format, partitioning=part, schema=schema
             )
+
+    def getMetadata(self):
+        return (
+            self.metrics_per_plugin,
+            self.tags_per_metric,
+            self.dtype_per_metric,
+            self.part_cols_dictionaries,
+            self.dict_cols,
+            self.schema_stump,
+        )
 
     def query(self, metrics, columns=None, tstart=None, tstop=None, **kwargs):
         """
@@ -119,9 +113,7 @@ class M100DataClient:
 
         if columns == None:
             tags_per_metric_sets = set(
-                metric_tags
-                for metric in metrics
-                for metric_tags in self.tags_per_metric[metric]
+                metric_tags for metric in metrics for metric_tags in self.tags_per_metric[metric]
             )
             columns = list(set.union(tags_per_metric_sets))
 
@@ -129,9 +121,7 @@ class M100DataClient:
         if tstart or tstop:
             # both have to be specificed if one of them is
             if not tstart or not tstop:
-                raise AttributeError(
-                    "If tstart or tstop is specified, both have to be specified."
-                )
+                raise AttributeError("If tstart or tstop is specified, both have to be specified.")
 
             timestamp_filtering = True
 
@@ -153,19 +143,11 @@ class M100DataClient:
 
         # adding timestamp filtering (if requested); right endpoint excluded
         if timestamp_filtering:
-            dt_start = datetime.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S").replace(
-                tzinfo=datetime.timezone.utc
-            )
-            dt_stop = datetime.datetime.strptime(tstop, "%Y-%m-%d %H:%M:%S").replace(
-                tzinfo=datetime.timezone.utc
-            )
+            dt_start = datetime.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc)
+            dt_stop = datetime.datetime.strptime(tstop, "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc)
 
-            timestamp_filter = (
-                ds.field("timestamp").cast(pa.timestamp("ms", tz="UTC")) >= dt_start
-            )
-            timestamp_filter &= (
-                ds.field("timestamp").cast(pa.timestamp("ms", tz="UTC")) < dt_stop
-            )  # exclusive
+            timestamp_filter = ds.field("timestamp").cast(pa.timestamp("ms", tz="UTC")) >= dt_start
+            timestamp_filter &= ds.field("timestamp").cast(pa.timestamp("ms", tz="UTC")) < dt_stop  # exclusive
 
             if common_filter is not None:
                 common_filter &= timestamp_filter
@@ -181,9 +163,7 @@ class M100DataClient:
             if common_filter is not None:
                 dtype_metrics_filter &= common_filter
 
-            table = self.dataset_per_dtype[dtype].to_table(
-                columns=columns, filter=dtype_metrics_filter
-            )
+            table = self.dataset_per_dtype[dtype].to_table(columns=columns, filter=dtype_metrics_filter)
             tables.append(table)
 
         # concat tables (PyArrow)
@@ -199,16 +179,12 @@ class M100DataClient:
         """
 
         if "metric" in kwargs.keys():
-            raise AttributeError(
-                "'metric' tag not allowed in this function. Use 'query' instead."
-            )
+            raise AttributeError("'metric' tag not allowed in this function. Use 'query' instead.")
 
         if not isinstance(plugins, list):
             plugins = [plugins]
 
-        metrics = [
-            metric for plugin in plugins for metric in self.metrics_per_plugin[plugin]
-        ]
+        metrics = [metric for plugin in plugins for metric in self.metrics_per_plugin[plugin]]
         df = self.query(metrics, **kwargs)
 
         return df
