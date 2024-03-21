@@ -9,14 +9,14 @@ import pytest
 
 from semi_supervised.utils import (
     autoencoder_predict,
-    # build_dataset,
+    build_dataset,
     calculate_threshold,
     split_df,
     model_definition,
     evaluate_model,
 )
 
-# from task.semi_supervised.semi_supervised import NODE, DATASET_PATH
+from semi_supervised.semi_supervised import NODE, DATASET_PATH
 
 
 @pytest.fixture
@@ -143,16 +143,16 @@ def test_evaluate_model():
     assert fscore == 1
 
 
-# @pytest.mark.order(5)
-# def test_build_dataset():
-#     expected_columns = ["timestamp", "source", "service", "state", "message"]
-#     expected_data = [
-#         ["2022-02-10 12:34:56", "nagios", "service_1", "OK", "Everything is ok"],
-#         ["2022-02-10 12:35:56", "ganglia", "service_2", "WARNING", "Memory usage is high"],
-#     ]
+@pytest.mark.order(5)
+def test_build_dataset():
+    expected_columns = ["timestamp", "source", "service", "state", "message"]
+    expected_data = [
+        ["2022-02-10 12:34:56", "nagios", "service_1", "OK", "Everything is ok"],
+        ["2022-02-10 12:35:56", "ganglia", "service_2", "WARNING", "Memory usage is high"],
+    ]
 
-#     df = build_dataset(NODE, DATASET_PATH)
+    df = build_dataset(NODE, DATASET_PATH)
 
-#     assert isinstance(df, pd.DataFrame)
-#     assert sorted(df.columns.tolist()), sorted(expected_columns)
-#     assert df.values.tolist(), expected_data
+    assert isinstance(df, pd.DataFrame)
+    assert sorted(df.columns.tolist()), sorted(expected_columns)
+    assert df.values.tolist(), expected_data
