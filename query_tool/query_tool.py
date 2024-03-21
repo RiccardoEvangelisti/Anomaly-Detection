@@ -62,16 +62,6 @@ class M100DataClient:
                 self.path, format=parquet_format, partitioning=part, schema=schema
             )
 
-    def getMetadata(self):
-        return (
-            self.metrics_per_plugin,
-            self.tags_per_metric,
-            self.dtype_per_metric,
-            self.part_cols_dictionaries,
-            self.dict_cols,
-            self.schema_stump,
-        )
-
     def query(self, metrics, columns=None, tstart=None, tstop=None, **kwargs):
         """
         Queries the dataset for specific metrics.
