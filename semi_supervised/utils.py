@@ -9,18 +9,12 @@ from keras import regularizers
 from keras.layers import Dense, Input
 from keras.models import Model
 
-from query_tool.query_tool import M100DataClient
-
 
 def build_dataset(node, dataset_path):
     if not isinstance(node, str):
         raise ValueError("node must be a string")
     
-    os.path.isdir(dataset_path)
-    client = M100DataClient(dataset_path)
-    
-    df = client.query_plugins(plugins="nagios", node=node).sort_values(by="timestamp", ascending=True)
-    
+    df = pd.DataFrame()
     """- Build the complete dataset, with anomalies and with nagios column"""
     return df
 
