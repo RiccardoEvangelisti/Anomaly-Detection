@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging, os
 
 logging.disable(logging.WARNING)  # disable TF logging
@@ -13,7 +14,14 @@ ND: Normal Data
 AD: Anomalous Data
 """
 
-DATASET_PATH = "./dataset/22-09/year_month=22-09"
+YEAR = 2022
+MONTH = 9
+date_dataset = datetime(YEAR, MONTH, 1)
+
+DATASET_FOLDER = "./dataset/"
+DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
+dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m")
+
 NODE = "10"
 
 RANDOM_STATE = 42
@@ -26,7 +34,7 @@ BATCH_SIZE = 128
 
 def main():
 
-    df = build_dataset(NODE, DATASET_PATH)
+    df = build_dataset(NODE, dataset_rebuild_path)
 
     n_features = df.shape[1]
 
