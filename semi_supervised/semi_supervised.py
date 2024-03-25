@@ -35,7 +35,7 @@ dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") +
 NODE = "10"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
-NAN_THRESH_PERCENT = 0.3
+NAN_THRESH_PERCENT = 0.95
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30

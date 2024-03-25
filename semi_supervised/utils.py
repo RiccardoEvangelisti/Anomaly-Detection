@@ -85,13 +85,63 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
         raise ValueError("Invalid value for val_AD or decoded_val_AD")
 
     # A list in which each element corresponds to the maximum absolute error of one row. **It's the maximum error that each observation has made**
+    '''
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR
+    ERROR 
+    
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL
+    THOSE BELOW ARE NULL'''
     max_errors_list_valid_ND = np.max(np.abs(decoded_val_ND - val_ND), axis=1)
     max_errors_list_valid_AD = np.max(np.abs(decoded_val_AD - val_AD), axis=1)
 
     classes = np.concatenate(([0] * val_ND.shape[0], [1] * val_AD.shape[0]))
     errors = np.concatenate((max_errors_list_valid_ND, max_errors_list_valid_AD))
 
-    n_perc_min = 10
+    n_perc_min = 1
     n_perc_max = 100
     best_n_perc = n_perc_max
     fscore_val_best = 0
