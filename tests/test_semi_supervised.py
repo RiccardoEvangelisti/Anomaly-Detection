@@ -69,7 +69,7 @@ def test_model_definition(df_model):
     EPOCHS = 2
     BATCH_SIZE = 1
 
-    autoencoder = model_definition(n_features, train, val, EPOCHS, BATCH_SIZE)
+    _, autoencoder = model_definition(n_features, train, val, EPOCHS, BATCH_SIZE)
 
     decoded_train = autoencoder_predict(autoencoder, train, "train")
     decoded_test = autoencoder_predict(autoencoder, test, "test")
