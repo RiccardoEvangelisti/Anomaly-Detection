@@ -1,6 +1,8 @@
 from datetime import datetime
 import logging, os
 import numpy as np
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.preprocessing import MinMaxScaler
 
 logging.disable(logging.WARNING)  # disable TF logging
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -35,7 +37,7 @@ dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") +
 NODE = "10"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
-NAN_THRESH_PERCENT = 0.9
+NAN_THRESH_PERCENT = 0.8
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
@@ -74,6 +76,15 @@ def main():
         rand=RANDOM_STATE,
     )
 
+    # Fit the Scaler only on ND train data
+    scaler = MinMaxScaler().fit(train_ND)
+    # Scale all the data
+    train_ND = pd.DataFrame(scaler.transform(train_ND), columns=train_ND.columns, index=train_ND.index)
+    val_ND = pd.DataFrame(scaler.transform(val_ND), columns=val_ND.columns, index=val_ND.index)
+    test_ND = pd.DataFrame(scaler.transform(test_ND), columns=test_ND.columns, index=test_ND.index)
+    val_AD = pd.DataFrame(scaler.transform(val_AD), columns=val_AD.columns, index=val_AD.index)
+    test_AD = pd.DataFrame(scaler.transform(test_AD), columns=test_AD.columns, index=test_AD.index)
+
     # Autoencoder definition
     n_features = df.shape[1] - 2  # minus the "timestamp" and "nagiosdrained" features
     history, autoencoder = model_definition(
@@ -87,6 +98,8 @@ def main():
     plt.title("Autoencoder fitting")
     plt.plot(history.history["loss"], label="Training Loss")
     plt.plot(history.history["val_loss"], label="Validation Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss Error")
     plt.legend()
     plt.show()
     print("\n-----------------------------------------------------------")
@@ -108,21 +121,33 @@ def main():
         decoded_val_AD,
     )
 
-    # Test on unseen data
+    # Evaluate model on unseen ND data
     pred_classes_test_ND, precision_test_ND, recall_test_ND, fscore_test_ND = evaluate_model(
         True, test_ND, decoded_test_ND, threshold
     )
+    # Evaluate model on unseen AD data
     pred_classes_test_AD, precision_test_AD, recall_test_AD, fscore_test_AD = evaluate_model(
         False, test_AD, decoded_test_AD, threshold
     )
 
+    # Evaluate model on unseen AD+ND data
+    precision, recall, fscore, _ = precision_recall_fscore_support(
+        [0] * test_ND.shape[0] + [1] * test_AD.shape[0],  # actual classes
+        pred_classes_test_ND + pred_classes_test_AD,  # predicted classes
+        average="weighted",
+        zero_division=0,
+    )
+
     print("\n-----------------------------------------------------------")
-    print(
-        "ND TEST: precision = {} | recall = {} | fscore = {}".format(precision_test_ND, recall_test_ND, fscore_test_ND)
-    )
-    print(
-        "AD TEST: precision = {} | recall = {} | fscore = {}".format(precision_test_AD, recall_test_AD, fscore_test_AD)
-    )
+    for string, precision, recall, fscore in zip(
+        ["ND", "AD", "ND+AD"],
+        [precision_test_ND, precision_test_AD, precision],
+        [recall_test_ND, recall_test_AD, recall],
+        [fscore_test_ND, fscore_test_AD, fscore],
+    ):
+        print(
+            "{} TEST:\tPrecision = {:.4f} | Recall = {:.4f} | Fscore = {:.4f}".format(string, precision, recall, fscore)
+        )
 
     # Build dataframe with predicted classes and original timestamps
     pred_classes_test_ND = pd.DataFrame(pred_classes_test_ND, index=test_ND.index)
