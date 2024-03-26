@@ -22,6 +22,10 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
 
     df = df.sort_values(by="timestamp").reset_index(drop=True)
 
+    original_num_rows = df.shape[0]
+    original_columns = df.columns.to_list()
+    original_num_rows_per_column = df.count()
+
     # Removing rows with missing nagios value
     df = df[df["nagiosdrained"].notna()]
 
@@ -31,7 +35,24 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
     # Drop the remaining NaN rows
     df = df.dropna()
 
-    return df
+    # Print description
+    print("\n-----------------------------------------------------------")
+    print(
+        "Number of rows:\toriginal({}) − removed({}) = {} rows".format(
+            original_num_rows, original_num_rows - df.shape[0], df.shape[0]
+        )
+    )
+    print(
+        "Number of cols:\toriginal({}) − removed({}) = {} cols".format(
+            len(original_columns), len(original_columns) - df.shape[1], df.shape[1]
+        )
+    )
+    print("\nRemoved\t| Original rows\t|  Column")
+    print("-------\t| -------------\t|  ------")
+    for col in original_columns:
+        print("  {}\t|\t{}\t|  {}".format("no" if col in df.columns else "YES", original_num_rows_per_column[col], col))
+
+    return df.reset_index(drop=True)
 
 
 def extract_anomalous_data(df: pd.DataFrame) -> tuple[pd.Index, pd.Index]:
@@ -133,9 +154,9 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
 
     mrkrsize = 5
     plt.title("Scores on validation data")
-    plt.plot(n_percs, fscores, c="b", label="F-Score", marker="o", linewidth=2, markersize=mrkrsize)
-    plt.plot(n_percs, recalls, c="g", label="Recall", marker="x", linewidth=2, markersize=mrkrsize)
-    plt.plot(n_percs, precs, c="r", label="Precision", marker="D", linewidth=2, markersize=mrkrsize)
+    plt.plot(n_percs, fscores, c="b", label="F-Score", marker="o", markersize=mrkrsize)
+    plt.plot(n_percs, recalls, c="g", label="Recall", marker="x", markersize=mrkrsize)
+    plt.plot(n_percs, precs, c="r", label="Precision", marker="D", markersize=mrkrsize)
     plt.axvline(x=best_n_perc, c="grey", linestyle="--")
     plt.xlabel("N-th percentile")
     plt.ylabel("Score value")
@@ -143,6 +164,11 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     plt.show()
 
     return best_error_threshold, n_perc
+
+
+"""
+unused
+"""
 
 
 def evaluate_model(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray, threshold: float):
@@ -161,3 +187,17 @@ def evaluate_model(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray
     )
 
     return predictions, precision, recall, fscore
+
+
+def classify_data(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray, threshold: float):
+    classes = [0 if normal_data else 1] * test.shape[0]
+    errors = np.max(np.abs(decoded_test - test), axis=1)
+
+    predictions = []
+    for e in errors:
+        if e > threshold:
+            predictions.append(1)
+        else:
+            predictions.append(0)
+
+    return predictions, classes

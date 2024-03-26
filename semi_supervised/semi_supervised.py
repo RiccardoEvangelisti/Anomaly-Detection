@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging, os
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import classification_report, precision_recall_fscore_support
 from sklearn.preprocessing import MinMaxScaler
 
 logging.disable(logging.WARNING)  # disable TF logging
@@ -15,6 +15,7 @@ from utils import (
     autoencoder_predict,
     build_dataset,
     calculate_threshold,
+    classify_data,
     evaluate_model,
     extract_anomalous_data,
     model_definition,
@@ -52,8 +53,6 @@ def main():
 
     # Build dataset
     df = build_dataset(ACCEPTED_PLUGINS, NODE, dataset_rebuild_path, NAN_THRESH_PERCENT)
-    print("\n-----------------------------------------------------------")
-    print(df.info(verbose=True))
 
     # Extract anomalous data
     df_ND_indexes, df_AD_indexes = extract_anomalous_data(df)
@@ -121,33 +120,22 @@ def main():
         decoded_val_AD,
     )
 
-    # Evaluate model on unseen ND data
-    pred_classes_test_ND, precision_test_ND, recall_test_ND, fscore_test_ND = evaluate_model(
-        True, test_ND, decoded_test_ND, threshold
-    )
-    # Evaluate model on unseen AD data
-    pred_classes_test_AD, precision_test_AD, recall_test_AD, fscore_test_AD = evaluate_model(
-        False, test_AD, decoded_test_AD, threshold
-    )
-
-    # Evaluate model on unseen AD+ND data
-    precision, recall, fscore, _ = precision_recall_fscore_support(
-        [0] * test_ND.shape[0] + [1] * test_AD.shape[0],  # actual classes
-        pred_classes_test_ND + pred_classes_test_AD,  # predicted classes
-        average="weighted",
-        zero_division=0,
-    )
-
     print("\n-----------------------------------------------------------")
-    for string, precision, recall, fscore in zip(
-        ["ND", "AD", "ND+AD"],
-        [precision_test_ND, precision_test_AD, precision],
-        [recall_test_ND, recall_test_AD, recall],
-        [fscore_test_ND, fscore_test_AD, fscore],
-    ):
-        print(
-            "{} TEST:\tPrecision = {:.4f} | Recall = {:.4f} | Fscore = {:.4f}".format(string, precision, recall, fscore)
+    
+    # Classify unseen ND data
+    pred_classes_test_ND, actual_classes_test_ND = classify_data(True, test_ND, decoded_test_ND, threshold)
+    # Classify unseen AD data
+    pred_classes_test_AD, actual_classes_test_AD = classify_data(False, test_AD, decoded_test_AD, threshold)
+
+    print(
+        classification_report(
+            actual_classes_test_ND + actual_classes_test_AD,
+            pred_classes_test_ND + pred_classes_test_AD,
+            output_dict=False,
+            digits=4,
+            target_names=["0: Normal data", "1: Anomalous data"],
         )
+    )
 
     # Build dataframe with predicted classes and original timestamps
     pred_classes_test_ND = pd.DataFrame(pred_classes_test_ND, index=test_ND.index)
