@@ -1,11 +1,11 @@
 from datetime import datetime
 import logging, os
-
 import numpy as np
 
 logging.disable(logging.WARNING)  # disable TF logging
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+import keras
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -35,35 +35,47 @@ dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") +
 NODE = "10"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
-NAN_THRESH_PERCENT = 0.95
+NAN_THRESH_PERCENT = 0.9
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
-VAL_AD_PERC, TEST_AD_PERC = 30, 70
+VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70
 
-EPOCHS = 128
-BATCH_SIZE = 128
+EPOCHS = 256
+BATCH_SIZE = 64
 
 
 def main():
+    keras.utils.set_random_seed(RANDOM_STATE)
 
+    # Build dataset
     df = build_dataset(ACCEPTED_PLUGINS, NODE, dataset_rebuild_path, NAN_THRESH_PERCENT)
     print("\n-----------------------------------------------------------")
     print(df.info(verbose=True))
 
+    # Extract anomalous data
     df_ND_indexes, df_AD_indexes = extract_anomalous_data(df)
 
-    # Split ND data, without "timestamp" feature
+    # Split ND data, without "timestamp" and "nagiosdrained" features
     train_ND, val_ND, test_ND = split_df(
-        df.loc[df_ND_indexes].drop(columns="timestamp"),
+        df.loc[df_ND_indexes].drop(columns=["timestamp", "nagiosdrained"]),
         train=TRAIN_ND_PERC,
         val=VAL_ND_PERC,
         test=TEST_ND_PERC,
         rand=RANDOM_STATE,
     )
 
+    # Split AD actual data, without "timestamp" and "nagiosdrained" features
+    _, val_AD, test_AD = split_df(
+        df.loc[df_AD_indexes].drop(columns=["timestamp", "nagiosdrained"]),
+        train=0,
+        val=VAL_AD_PERC,
+        test=TEST_AD_PERC,
+        rand=RANDOM_STATE,
+    )
+
     # Autoencoder definition
-    n_features = df.shape[1] - 1  # minus the "timestamp" feature
+    n_features = df.shape[1] - 2  # minus the "timestamp" and "nagiosdrained" features
     history, autoencoder = model_definition(
         n_features,
         np.asarray(train_ND).astype(np.float64),  # conversion to array
@@ -72,34 +84,21 @@ def main():
         BATCH_SIZE,
     )
 
+    plt.title("Autoencoder fitting")
     plt.plot(history.history["loss"], label="Training Loss")
     plt.plot(history.history["val_loss"], label="Validation Loss")
     plt.legend()
     plt.show()
+    print("\n-----------------------------------------------------------")
 
     # Prediction of normal data
     _ = autoencoder_predict(autoencoder, train_ND, "ND train")
     decoded_test_ND = autoencoder_predict(autoencoder, test_ND, "ND test")
     decoded_val_ND = autoencoder_predict(autoencoder, val_ND, "ND val")
 
-    # Prediction of anomalous data (without "timestamp" feature)
-    decoded_AD = autoencoder_predict(autoencoder, df.loc[df_AD_indexes].drop(columns="timestamp"), "AD")
-
-    # Split AD actual data and predicted data
-    _, val_AD, test_AD = split_df(
-        df.loc[df_AD_indexes].drop(columns="timestamp"),  # without "timestamp" feature
-        train=0,
-        val=VAL_AD_PERC,
-        test=TEST_AD_PERC,
-        rand=RANDOM_STATE,
-    )
-    _, decoded_val_AD, decoded_test_AD = split_df(
-        decoded_AD,
-        train=0,
-        val=VAL_AD_PERC,
-        test=TEST_AD_PERC,
-        rand=RANDOM_STATE,
-    )
+    # Prediction of anomalous data
+    decoded_test_AD = autoencoder_predict(autoencoder, test_AD, "AD test")
+    decoded_val_AD = autoencoder_predict(autoencoder, val_AD, "AD val")
 
     # Find best Threshold using validation sets
     threshold, _ = calculate_threshold(
@@ -117,27 +116,43 @@ def main():
         False, test_AD, decoded_test_AD, threshold
     )
 
-    print("ND TEST: precision = {} recall = {} fscore = {}".format(precision_test_ND, recall_test_ND, fscore_test_ND))
-    print("AD TEST: precision = {} recall = {} fscore = {}".format(precision_test_AD, recall_test_AD, fscore_test_AD))
+    print("\n-----------------------------------------------------------")
+    print(
+        "ND TEST: precision = {} | recall = {} | fscore = {}".format(precision_test_ND, recall_test_ND, fscore_test_ND)
+    )
+    print(
+        "AD TEST: precision = {} | recall = {} | fscore = {}".format(precision_test_AD, recall_test_AD, fscore_test_AD)
+    )
 
     # Build dataframe with predicted classes and original timestamps
     pred_classes_test_ND = pd.DataFrame(pred_classes_test_ND, index=test_ND.index)
     pred_classes_test_AD = pd.DataFrame(pred_classes_test_AD, index=test_AD.index)
-    pred_classes_test = pd.concat((pred_classes_test_ND, pred_classes_test_AD), axis=0).sort_index()
+    pred_classes_test = (
+        pd.concat((pred_classes_test_ND, pred_classes_test_AD), axis=0)
+        .sort_index()
+        .rename(columns={0: "nagiosdrained"})
+    )
     pred_classes_test["timestamp"] = df.loc[pred_classes_test.index]["timestamp"]
 
     # Build dataframe with original classes (nagiosdrained) and original timestamps
-    classes_test = pd.DataFrame(pd.concat((test_ND, test_AD), axis=0)).sort_index()[["nagiosdrained"]]
-    classes_test["timestamp"] = df.loc[classes_test.index]["timestamp"]
+    classes_test = df.loc[np.concatenate((test_ND.index, test_AD.index))].sort_index()[["nagiosdrained", "timestamp"]]
 
-    plt.plot(classes_test["timestamp"], classes_test["nagiosdrained"], label="Actual classes")
-    plt.plot(pred_classes_test["timestamp"], pred_classes_test[0], label="Predicted classes")
-    plt.xticks(classes_test["timestamp"][::100])
-    plt.xlabel("Timestamp")
-    plt.xlabel("Class")
-    plt.yticks([0, 1])
-    plt.legend()
-    plt.tick_params(axis="x", labelrotation=45)
+    # Plot
+    _, ax = plt.subplots(2, 1, figsize=(16, 10))
+    for axes, array, color, label in zip(
+        ax,
+        [classes_test, pred_classes_test],
+        ["blue", "orange"],
+        ["Actual classes (nagiosdrained)", "Predicted classes"],
+    ):
+        axes.plot(array["timestamp"], array["nagiosdrained"], label=label, color=color)
+        axes.set_xticks(array["timestamp"][::100])
+        axes.tick_params(axis="x", labelrotation=30)
+        axes.set_ylabel("nagiosdrained")
+        axes.set_yticks([0, 1])
+        axes.legend()
+
+    plt.suptitle("Test data")
     plt.tight_layout()
     plt.show()
 

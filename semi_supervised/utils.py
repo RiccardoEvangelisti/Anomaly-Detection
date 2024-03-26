@@ -65,76 +65,25 @@ def model_definition(n_features: int, train_ND: pd.DataFrame, val_ND: pd.DataFra
         shuffle=True,
         validation_data=(val_ND, val_ND),
         # sample_weight=np.asarray(active_idle), # not used for now
-        verbose=1,
+        verbose=0,
     )
     return history, autoencoder
 
 
 def autoencoder_predict(autoencoder: Model, actual: pd.DataFrame, name):
-    decoded = autoencoder.predict(actual)
-    decoded = pd.DataFrame(decoded, index=actual.index)
+    decoded = autoencoder.predict(actual, verbose=0)
+    decoded = pd.DataFrame(decoded, columns=actual.columns, index=actual.index)
     print("Reconstruction MSE on {}:\t{}".format(name, mean_squared_error(actual, decoded)))
     return decoded
 
 
 def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: np.ndarray, decoded_val_AD: np.ndarray):
-
     if val_AD is None or decoded_val_AD is None:
         raise ValueError("Invalid value for val_AD or decoded_val_AD")
     if val_ND is None or decoded_val_ND is None or val_ND.size <= 0 or decoded_val_ND.size <= 0:
         raise ValueError("Invalid value for val_AD or decoded_val_AD")
 
     # A list in which each element corresponds to the maximum absolute error of one row. **It's the maximum error that each observation has made**
-    '''
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR
-    ERROR 
-    
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL
-    THOSE BELOW ARE NULL'''
     max_errors_list_valid_ND = np.max(np.abs(decoded_val_ND - val_ND), axis=1)
     max_errors_list_valid_AD = np.max(np.abs(decoded_val_AD - val_AD), axis=1)
 
@@ -142,7 +91,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     errors = np.concatenate((max_errors_list_valid_ND, max_errors_list_valid_AD))
 
     n_perc_min = 1
-    n_perc_max = 100
+    n_perc_max = 99
     best_n_perc = n_perc_max
     fscore_val_best = 0
     n_percs = []
@@ -162,7 +111,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
             else:
                 predictions.append(0)
 
-        if sum(map(lambda x: x==1, predictions)) == 0:
+        if sum(map(lambda x: x == 1, predictions)) == 0:
             print("WARNING: no predictions of class 1 with percentile:", n_perc)
 
         precision_val, recall_val, fscore_val, _ = precision_recall_fscore_support(
@@ -179,16 +128,16 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
             best_n_perc = n_perc
 
     best_error_threshold = np.percentile(max_errors_list_valid_ND, best_n_perc)
-    print("Best threshold on validation data: {}".format(best_error_threshold))
+    print("\nBest threshold on validation data: {}".format(best_error_threshold))
 
     mrkrsize = 5
-    fig = plt.figure()
+    plt.title("Scores on validation data")
     plt.plot(n_percs, fscores, c="b", label="F-Score", marker="o", linewidth=2, markersize=mrkrsize)
     plt.plot(n_percs, recalls, c="g", label="Recall", marker="x", linewidth=2, markersize=mrkrsize)
     plt.plot(n_percs, precs, c="r", label="Precision", marker="D", linewidth=2, markersize=mrkrsize)
     plt.axvline(x=best_n_perc, c="grey", linestyle="--")
     plt.xlabel("N-th percentile")
-    plt.ylabel("Detection Accuracy")
+    plt.ylabel("Score value")
     plt.legend()
     plt.show()
 
@@ -206,6 +155,8 @@ def evaluate_model(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray
         else:
             predictions.append(0)
 
-    precision, recall, fscore, _ = precision_recall_fscore_support(classes, predictions, average="weighted")
+    precision, recall, fscore, _ = precision_recall_fscore_support(
+        classes, predictions, average="binary", pos_label=0 if normal_data else 1  # , zero_division=0
+    )
 
     return predictions, precision, recall, fscore
