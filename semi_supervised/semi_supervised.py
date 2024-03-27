@@ -4,6 +4,7 @@ logging.disable(logging.WARNING)  # disable TF logging
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from datetime import datetime, timedelta
+import calendar
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -33,20 +34,18 @@ AD: Anomalous Data
 
 YEAR = 2022
 MONTH = 9
-date_dataset = datetime(YEAR, MONTH, 1)
 
 DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
-dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") + "/"
 
-NODE = "10"
+NODE = "104"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
 NAN_THRESH_PERCENT = 0.9
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
-VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70
+VAL_AD_PERC, TEST_AD_PERC = 5, 95  # 30, 70
 
 DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)
 
@@ -56,6 +55,11 @@ BATCH_SIZE = 64
 
 def main():
     keras.utils.set_random_seed(RANDOM_STATE)
+
+    dataset_rebuild_path = DATASET_FOLDER_REBUILD + datetime(YEAR, MONTH, 1).strftime("%y-%m") + "/"
+    first_day = datetime(YEAR, MONTH, 1)
+    last_day = calendar.monthrange(first_day.year, first_day.month)[1]
+    all_days = np.arange(first_day, last_day, dtype="datetime64[D]")
 
     # Build dataset
     df = build_dataset(ACCEPTED_PLUGINS, NODE, dataset_rebuild_path, NAN_THRESH_PERCENT)
@@ -187,7 +191,9 @@ def main():
         edgecolor="none",
         ax=ax,
     )
-    ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
+    ax.set_xticks(all_days)
+    ax.tick_params(axis="x", labelrotation=10)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=15))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     ax.set_ylabel("nagiosdrained")
     ax.set_yticks([0, 1])
