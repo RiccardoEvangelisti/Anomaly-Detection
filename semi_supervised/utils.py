@@ -47,7 +47,7 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
             len(original_columns), len(original_columns) - df.shape[1], df.shape[1]
         )
     )
-    print("\nRemoved\t| Original rows\t|  Column")
+    print("\nRemoved\t| Original rows\t|  Columns")
     print("-------\t| -------------\t|  ------")
     for col in original_columns:
         print("  {}\t|\t{}\t|  {}".format("no" if col in df.columns else "YES", original_num_rows_per_column[col], col))
@@ -150,7 +150,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
             best_n_perc = n_perc
 
     best_error_threshold = np.percentile(max_errors_list_valid_ND, best_n_perc)
-    print("\nBest threshold on validation data: {}".format(best_error_threshold))
+    # print("\nBest threshold on validation data: {}".format(best_error_threshold))
 
     mrkrsize = 5
     plt.title("Scores on validation data")
