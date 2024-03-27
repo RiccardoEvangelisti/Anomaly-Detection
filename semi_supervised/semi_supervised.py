@@ -39,7 +39,7 @@ DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
 dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") + "/"
 
-NODE = "335"
+NODE = "949"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
 NAN_THRESH_PERCENT = 0.9
