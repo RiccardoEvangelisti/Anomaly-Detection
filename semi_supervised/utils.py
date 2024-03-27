@@ -1,3 +1,4 @@
+from datetime import timedelta
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
             df = pd.merge(df, df_temp, on=["timestamp"], how="outer")
 
     df = df.sort_values(by="timestamp").reset_index(drop=True)
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     original_num_rows = df.shape[0]
     original_columns = df.columns.to_list()
@@ -70,6 +72,20 @@ def split_df(df, train, val, test, rand=None):
         (None, temp) if train == 0 else train_test_split(temp, test_size=val / (100 - test), random_state=rand)
     )
     return train_data, val_data, test_data
+
+
+def move_almost_AD(df_ND: pd.DataFrame, df_AD: pd.DataFrame, delta, train_ND, val_ND, test_ND):
+    for index, normal_sample in df_ND.iterrows():
+        if index not in test_ND.index:
+            if df_AD.loc[df_AD["timestamp"] == normal_sample.timestamp + delta].shape[0] > 0:
+                if index in train_ND.index:
+                    test_ND = pd.concat((test_ND, train_ND.loc[[index]]), axis=0)
+                    train_ND = train_ND.drop(index)
+                if index in val_ND.index:
+                    test_ND = pd.concat((test_ND, val_ND.loc[[index]]), axis=0)
+                    val_ND = val_ND.drop(index)
+
+    return train_ND, val_ND, test_ND
 
 
 def model_definition(n_features: int, train_ND: pd.DataFrame, val_ND: pd.DataFrame, EPOCHS: int, BATCH_SIZE: int):
@@ -201,3 +217,17 @@ def classify_data(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray,
             predictions.append(0)
 
     return predictions, classes
+
+
+def detect_AD_false_positives(pred_classes_test_ND: pd.DataFrame, df_AD: pd.DataFrame, delta: timedelta):
+    # Extract only the incorrectly predicted normal data
+    false_positives = pred_classes_test_ND.loc[pred_classes_test_ND["is_correct"] == False].sort_index()
+
+    for fp in false_positives.itertuples():
+        # Select the anomaly observations that are between the false positive and the false positive + delta, if any
+        anomaly_after_fp = df_AD[(df_AD["timestamp"] > fp.timestamp) & (df_AD["timestamp"] <= fp.timestamp + delta)]
+        # If there are any, the false positive have preceeded by delta-time the real anomaly
+        if not anomaly_after_fp.empty:
+            print(
+                f"ANOMALY PREDICTED AT: {fp.timestamp}, FIRST REAL ANOMALY AT: {anomaly_after_fp.iloc[0].timestamp} ({anomaly_after_fp.iloc[0].timestamp - fp.timestamp} before)"
+            )

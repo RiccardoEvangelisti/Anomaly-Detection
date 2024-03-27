@@ -1,28 +1,28 @@
-from datetime import datetime
 import logging, os
-from matplotlib.ticker import MaxNLocator
-import numpy as np
-import seaborn as sns
-from sklearn.metrics import classification_report
-from sklearn.preprocessing import MinMaxScaler
-import matplotlib.patches as mpatches
-import matplotlib.dates as mdates
 
 logging.disable(logging.WARNING)  # disable TF logging
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-import keras
+from datetime import datetime, timedelta
+import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import matplotlib.dates as mdates
+import numpy as np
 import pandas as pd
+from sklearn.metrics import classification_report
+from sklearn.preprocessing import MinMaxScaler
+import keras
 
 from utils import (
     autoencoder_predict,
     build_dataset,
     calculate_threshold,
     classify_data,
-    evaluate_model,
+    detect_AD_false_positives,
     extract_anomalous_data,
     model_definition,
+    move_almost_AD,
     split_df,
 )
 
@@ -39,14 +39,16 @@ DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
 dataset_rebuild_path = DATASET_FOLDER_REBUILD + date_dataset.strftime("%y-%m") + "/"
 
-NODE = "10"
+NODE = "335"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
-NAN_THRESH_PERCENT = 0.95
+NAN_THRESH_PERCENT = 0.9
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
 VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70
+
+DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)
 
 EPOCHS = 256
 BATCH_SIZE = 64
@@ -68,6 +70,11 @@ def main():
         val=VAL_ND_PERC,
         test=TEST_ND_PERC,
         rand=RANDOM_STATE,
+    )
+
+    # Move to the test (ND) the "almost anomalous data", that is the ND observations "delta" time before an anomaly has been detected and flagged by nagios.
+    train_ND, val_ND, test_ND = move_almost_AD(
+        df.iloc[df_ND_indexes], df.iloc[df_AD_indexes], DELTA_TIME_BEFORE_ANOMALY, train_ND, val_ND, test_ND
     )
 
     # Split AD actual data, without "timestamp" and "nagiosdrained" features
@@ -141,95 +148,9 @@ def main():
         )
     )
 
-    # # Build dataframe with predicted classes and original timestamps
-    # pred_classes_test_ND = pd.DataFrame(pred_classes_test_ND, index=test_ND.index)
-    # pred_classes_test_AD = pd.DataFrame(pred_classes_test_AD, index=test_AD.index)
-    # pred_classes_test = (
-    #     pd.concat((pred_classes_test_ND, pred_classes_test_AD), axis=0)
-    #     .sort_index()
-    #     .rename(columns={0: "nagiosdrained"})
-    # )
-    # pred_classes_test["timestamp"] = pd.to_datetime(df.loc[pred_classes_test.index]["timestamp"])
+    print("\n-----------------------------------------------------------")
 
-    # # Build dataframe with original classes (nagiosdrained) and original timestamps
-    # classes_test = df.loc[np.concatenate((test_ND.index, test_AD.index))].sort_index()[["nagiosdrained", "timestamp"]]
-
-    # # Plot
-    # # This column is True if the prediction is correct and False otherwise
-    # pred_classes_test["correct"] = pred_classes_test["nagiosdrained"] == classes_test["nagiosdrained"]
-    # _, ax = plt.subplots(figsize=(16, 5))
-
-    # sns.scatterplot(
-    #     data=pred_classes_test,
-    #     x="timestamp",
-    #     y="nagiosdrained",
-    #     hue="correct",
-    #     palette=["red", "steelblue"],
-    #     size="correct",
-    #     sizes=(70, 100),
-    #     style="correct",
-    #     markers=["X", "."],
-    #     edgecolor="none",
-    #     ax=ax,
-    # )
-
-    # ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
-    # ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    # ax.tick_params(axis="x", labelrotation=10)
-    # ax.set_ylabel("nagiosdrained")
-    # ax.set_yticks([0, 1])
-    # ax.legend(labels=["Correctly predicted", "Incorrectly predicted"])
-
-    # plt.title("Test data: Correct vs Incorrect Predictions")
-    # plt.tight_layout()
-    # plt.show()
-
-    # ################################################################
-
-    # # Build dataframe with all original classes (nagiosdrained) and original timestamps
-    # all_classes = df[["nagiosdrained", "timestamp"]].copy()
-
-    # # Create a new column 'correct' in the dataframe 'all_classes'
-    # # This column is 0 if the prediction is correct, 1 if incorrect and 2 for points that are not in the test set
-    # all_classes.loc[pred_classes_test.index, "correct"] = np.where(
-    #     all_classes.loc[pred_classes_test.index, "nagiosdrained"] == pred_classes_test["nagiosdrained"],
-    #     0,
-    #     1,
-    # )
-    # all_classes.loc[~all_classes.index.isin(pred_classes_test.index), "correct"] = 2
-
-    # # Create a new subplot for the graph
-    # _, ax = plt.subplots(figsize=(16, 5))
-
-    # # Use seaborn to create the scatter plot
-    # sns.scatterplot(
-    #     data=all_classes,
-    #     x="timestamp",
-    #     y="nagiosdrained",
-    #     hue="correct",
-    #     palette={0: "steelblue", 1: "red", 2: "grey"},
-    #     size="correct",
-    #     sizes={0: 50, 1: 100, 2: 20},
-    #     style="correct",
-    #     markers={0: ".", 1: "X", 2: "."},
-    #     edgecolor="none",
-    #     ax=ax,
-    # )
-
-    # ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
-    # ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    # ax.tick_params(axis="x", labelrotation=10)
-    # ax.set_ylabel("nagiosdrained")
-    # ax.set_yticks([0, 1])
-    # ax.legend(labels=['Train+Val data', 'Test data correctly predicted', 'Test data incorrectly predicted'])
-
-    # # Set the title and show the plot
-    # plt.title("All data: Correct vs Incorrect Test Predictions vs Not in test set")
-    # plt.tight_layout()
-    # plt.show()
-
-    # Plot the results
-    # Build a dataframe, for test ND+AD, with original indexes, predicted classes, original timestamps, boolean column to indentify correct/incorrect predictions
+    # Build a dataframe, for test ND+AD, with original indexes, predicted classes, boolean column to indentify correct/incorrect predictions, original timestamps
     pred_classes_test = (
         pd.concat(
             [
@@ -240,57 +161,37 @@ def main():
         .sort_index()
         .rename(columns={0: "nagiosdrained"})
     )
-    pred_classes_test["timestamp"] = pd.to_datetime(df.loc[pred_classes_test.index, "timestamp"])
-    pred_classes_test["correct"] = (
+    pred_classes_test["is_correct"] = (
         pred_classes_test["nagiosdrained"] == df.loc[pred_classes_test.index, "nagiosdrained"]
     )
+    pred_classes_test["timestamp"] = df.loc[pred_classes_test.index, "timestamp"]
 
-    # Plot only test values
-    _, ax = plt.subplots(2, 1, figsize=(16, 10))
-    sns.scatterplot(
-        data=pred_classes_test,
-        x="timestamp",
-        y="nagiosdrained",
-        hue="correct",
-        palette=["red", "steelblue"],
-        size="correct",
-        sizes=(70, 100),
-        style="correct",
-        markers=["X", "."],
-        edgecolor="none",
-        ax=ax[0],
-    )
-    ax[0].xaxis.set_major_locator(MaxNLocator(nbins=10))
-    ax[0].xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    ax[0].tick_params(axis="x", labelrotation=10)
-    ax[0].set_ylabel("nagiosdrained")
-    ax[0].set_yticks([0, 1])
-    ax[0].legend(labels=["Test data Correctly predicted", "Test data Incorrectly predicted"])
-    ax[0].set_title("Test data: Correct vs Incorrect Predictions")
+    # Detect the false positive of the anomalous points, that are the false negatives of normal points
+    detect_AD_false_positives(pred_classes_test.loc[test_ND.index], df.iloc[df_AD_indexes], DELTA_TIME_BEFORE_ANOMALY)
 
     # Plot all data
-    df["correct"] = 2  # default to '2' for Train+Val data
-    df.loc[pred_classes_test.index, "correct"] = pred_classes_test["correct"].map({True: 0, False: 1})
+    df["is_correct"] = 2  # default to 2 for Train+Val data
+    df.loc[pred_classes_test.index, "is_correct"] = pred_classes_test["is_correct"].map({True: 0, False: 1})
 
+    _, ax = plt.subplots(figsize=(16, 5))
     sns.scatterplot(
         data=df,
         x="timestamp",
         y="nagiosdrained",
-        hue="correct",
+        hue="is_correct",
         palette={0: "steelblue", 1: "red", 2: "grey"},
-        size="correct",
+        size="is_correct",
         sizes={0: 50, 1: 100, 2: 20},
-        style="correct",
+        style="is_correct",
         markers={0: ".", 1: "X", 2: "."},
         edgecolor="none",
-        ax=ax[1],
+        ax=ax,
     )
-    ax[1].xaxis.set_major_locator(MaxNLocator(nbins=10))
-    ax[1].xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    ax[1].tick_params(axis="x", labelrotation=10)
-    ax[1].set_ylabel("nagiosdrained")
-    ax[1].set_yticks([0, 1])
-    ax[1].legend(
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    ax.set_ylabel("nagiosdrained")
+    ax.set_yticks([0, 1])
+    ax.legend(
         title="All points are displayed in their original position",
         title_fontsize="10",
         labels=["Train+Val data", "Test data correctly predicted", "Test data incorrectly predicted"],
@@ -298,6 +199,9 @@ def main():
     plt.title("All original nagiosdrained points")
     plt.tight_layout()
     plt.show()
+
+    # Clean up after plotting
+    df.drop(columns="is_correct")
 
 
 if __name__ == "__main__":
