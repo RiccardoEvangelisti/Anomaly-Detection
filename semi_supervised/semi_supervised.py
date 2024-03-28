@@ -45,7 +45,7 @@ NAN_THRESH_PERCENT = 0.8
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
-VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70
+VAL_AD_PERC, TEST_AD_PERC = 10, 90 # 30, 70
 
 DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)
 
@@ -83,6 +83,7 @@ def main():
     )
 
     # Split AD actual data, without "timestamp" and "nagiosdrained" features
+    # If the AD data are too few, the split can throw an error because the array "val_AD" would be empty -> increment the "VAL_AD_PERC"
     _, val_AD, test_AD = split_df(
         df.loc[df_AD_indexes].drop(columns=["timestamp", "nagiosdrained"]),
         train=0,

@@ -130,7 +130,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     errors = np.concatenate((max_errors_list_valid_ND, max_errors_list_valid_AD))
 
     n_perc_min = 1
-    n_perc_max = 99
+    n_perc_max = 100
     best_n_perc = n_perc_max
     fscore_val_best = 0
     n_percs = []
@@ -167,7 +167,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
             best_n_perc = n_perc
 
     best_error_threshold = np.percentile(max_errors_list_valid_ND, best_n_perc)
-    # print("\nBest threshold on validation data: {}".format(best_error_threshold))
+    print("\nBest threshold on validation data: {}%".format(best_n_perc))
 
     mrkrsize = 5
     plt.title("Scores on validation data")
