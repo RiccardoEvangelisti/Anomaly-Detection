@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
-    # Aggregating the dataset
+    # Merge all the different plugin datasets
     df = pd.DataFrame()
     for plugin in plugins:
         df_temp = pd.read_csv(dataset_rebuild_path + plugin + "_rebuild" + "_node:" + node + ".csv")
@@ -24,6 +24,7 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
     df = df.sort_values(by="timestamp").reset_index(drop=True)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
+    # Extract useful informations
     original_num_rows = df.shape[0]
     original_columns = df.columns.to_list()
     original_num_rows_per_column = df.count()
@@ -182,12 +183,10 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
     return best_error_threshold, n_perc
 
 
-"""
-unused
-"""
-
-
 def evaluate_model(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray, threshold: float):
+    """
+    unused
+    """
     classes = [0 if normal_data else 1] * test.shape[0]
     errors = np.max(np.abs(decoded_test - test), axis=1)
 
@@ -226,7 +225,7 @@ def detect_AD_false_positives(pred_classes_test_ND: pd.DataFrame, df_AD: pd.Data
     for fp in false_positives.itertuples():
         # Select the anomaly observations that are between the false positive and the false positive + delta, if any
         anomaly_after_fp = df_AD[(df_AD["timestamp"] > fp.timestamp) & (df_AD["timestamp"] <= fp.timestamp + delta)]
-        # If there are any, the false positive have preceeded by delta-time the real anomaly
+        # If there are any, the false positive has preceded by delta-time the real anomaly
         if not anomaly_after_fp.empty:
             print(
                 f"ANOMALY PREDICTED AT: {fp.timestamp}, FIRST REAL ANOMALY AT: {anomaly_after_fp.iloc[0].timestamp} ({anomaly_after_fp.iloc[0].timestamp - fp.timestamp} before)"

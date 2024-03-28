@@ -45,7 +45,7 @@ NAN_THRESH_PERCENT = 0.8
 
 RANDOM_STATE = 42
 TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
-VAL_AD_PERC, TEST_AD_PERC = 5, 95  # 30, 70
+VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70
 
 DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)
 
@@ -54,8 +54,9 @@ BATCH_SIZE = 64
 
 
 def main():
-    keras.utils.set_random_seed(RANDOM_STATE)
 
+    # Preliminary operations
+    keras.utils.set_random_seed(RANDOM_STATE)
     dataset_rebuild_path = DATASET_FOLDER_REBUILD + datetime(YEAR, MONTH, 1).strftime("%y-%m") + "/"
     first_day = datetime(YEAR, MONTH, 1)
     last_day = calendar.monthrange(first_day.year, first_day.month)[1]
@@ -76,7 +77,7 @@ def main():
         rand=RANDOM_STATE,
     )
 
-    # Move to the test (ND) the "almost anomalous data", that is the ND observations "delta" time before an anomaly has been detected and flagged by nagios.
+    # Move to the test (ND) the "almost anomalous data", that is the ND observations "delta" time before an anomaly has been detected and flagged by nagios
     train_ND, val_ND, test_ND = move_almost_AD(
         df.iloc[df_ND_indexes], df.iloc[df_AD_indexes], DELTA_TIME_BEFORE_ANOMALY, train_ND, val_ND, test_ND
     )
@@ -127,14 +128,13 @@ def main():
     decoded_test_AD = autoencoder_predict(autoencoder, test_AD, "AD test")
     decoded_val_AD = autoencoder_predict(autoencoder, val_AD, "AD val")
 
-    # Find best Threshold using validation sets
+    # Find the best Threshold using validation sets
     threshold, _ = calculate_threshold(
         val_ND,
         decoded_val_ND,
         val_AD,
         decoded_val_AD,
     )
-
     print("\n-----------------------------------------------------------")
 
     # Classify unseen ND data
@@ -151,10 +151,9 @@ def main():
             target_names=["Normal data", "Anomalous data"],
         )
     )
-
     print("\n-----------------------------------------------------------")
 
-    # Build a dataframe, for test ND+AD, with original indexes, predicted classes, boolean column to indentify correct/incorrect predictions, original timestamps
+    # Build a dataframe, for test ND+AD, with original indexes, predicted classes, boolean column to identify correct/incorrect predictions, original timestamps
     pred_classes_test = (
         pd.concat(
             [
