@@ -38,9 +38,9 @@ MONTH = 9
 DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
 
-NODE = "578"
+NODE = "10"
 
-ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi"]
+ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi", "jobtable"]
 NAN_THRESH_PERCENT = 0.8
 
 RANDOM_STATE = 42
