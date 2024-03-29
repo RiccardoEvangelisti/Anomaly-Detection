@@ -8,7 +8,6 @@ from sklearn.model_selection import train_test_split
 from keras import regularizers
 from keras.layers import Dense, Input
 from keras.models import Model
-from sklearn.preprocessing import MinMaxScaler
 
 
 def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
