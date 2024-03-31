@@ -38,7 +38,7 @@ MONTH = 9
 DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
 
-NODE = "10"
+NODE = "578"
 
 ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi", "jobtable"]
 NAN_THRESH_PERCENT = 0.8

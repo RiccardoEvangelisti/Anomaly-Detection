@@ -14,7 +14,7 @@ def build_dataset(plugins, node, dataset_rebuild_path, NAN_THRESH_PERCENT):
     # Merge all the different plugin datasets
     df = pd.DataFrame()
     for plugin in plugins:
-        df_temp = pd.read_csv(dataset_rebuild_path + plugin + "_rebuild" + "_node:" + node + ".csv")
+        df_temp = pd.read_csv(dataset_rebuild_path + plugin + "_rebuild" + "_node" + node + ".csv")
         if df.empty:
             df = df_temp
         else:
