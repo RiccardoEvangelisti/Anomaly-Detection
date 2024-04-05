@@ -29,8 +29,9 @@ from utils import (
 )
 
 """
-ND: Normal Data
-AD: Anomalous Data
+Abbreviations:
+    - "ND": Normal Data
+    - "AD": Anomalous Data
 """
 
 YEAR = 2022
@@ -39,19 +40,22 @@ MONTH = 9
 DATASET_FOLDER = "./dataset/"
 DATASET_FOLDER_REBUILD = DATASET_FOLDER + "rebuild/"
 
-NODE = "578"
+NODE = "578"  # must be string
 
-ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi", "jobtable"]
+ACCEPTED_PLUGINS = ["nagios", "ganglia", "ipmi", "jobtable"]  # plugins to consider
+
+# the percentage of non-NaN values over the entire length of the dataset that a column must have, or be dropped
 NAN_THRESH_PERCENT = 0.8
 
 RANDOM_STATE = 42
-TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30
-VAL_AD_PERC, TEST_AD_PERC = 10, 90 # 30, 70
 
-DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)
+TRAIN_ND_PERC, VAL_ND_PERC, TEST_ND_PERC = 60, 10, 30  # split percentages of ND data
+VAL_AD_PERC, TEST_AD_PERC = 10, 90  # 30, 70 # split percentages of AD data
 
-EPOCHS = 256
-BATCH_SIZE = 64
+DELTA_TIME_BEFORE_ANOMALY = timedelta(hours=2)  # delta-time before an anomaly to detect false positives
+
+EPOCHS = 256  # autoencoder epochs
+BATCH_SIZE = 64  # autoencoder batch size
 
 
 def main():
@@ -158,7 +162,7 @@ def main():
     # Build a support dataframe of which:
     # the data is the concatenation of predicted classes of test ND and test AD
     # the index is the original indexes
-    # the columns are: predicted classes, boolean column to identify correct/incorrect predictions, original timestamps    
+    # the columns are: predicted classes, boolean column to identify correct/incorrect predictions, original timestamps
     pred_classes_test = build_pred_class_test(pred_classes_test_ND, pred_classes_test_AD, test_ND, test_AD, df)
 
     # Detect the false positive of the anomalous points, that are the false negatives of normal points

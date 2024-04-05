@@ -184,7 +184,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
 
 def evaluate_model(normal_data: bool, test: np.ndarray, decoded_test: np.ndarray, threshold: float):
     """
-    unused
+    UNUSED
     """
     classes = [0 if normal_data else 1] * test.shape[0]
     errors = np.max(np.abs(decoded_test - test), axis=1)
