@@ -18,6 +18,7 @@ import keras
 from utils import (
     autoencoder_predict,
     build_dataset,
+    build_pred_class_test,
     calculate_threshold,
     classify_data,
     detect_AD_false_positives,
@@ -154,21 +155,11 @@ def main():
     )
     print("\n-----------------------------------------------------------")
 
-    # Build a dataframe, for test ND+AD, with original indexes, predicted classes, boolean column to identify correct/incorrect predictions, original timestamps
-    pred_classes_test = (
-        pd.concat(
-            [
-                pd.DataFrame(pred_classes_test_ND, index=test_ND.index),
-                pd.DataFrame(pred_classes_test_AD, index=test_AD.index),
-            ]
-        )
-        .sort_index()
-        .rename(columns={0: "nagiosdrained"})
-    )
-    pred_classes_test["is_correct"] = (
-        pred_classes_test["nagiosdrained"] == df.loc[pred_classes_test.index, "nagiosdrained"]
-    )
-    pred_classes_test["timestamp"] = df.loc[pred_classes_test.index, "timestamp"]
+    # Build a support dataframe of which:
+    # the data is the concatenation of predicted classes of test ND and test AD
+    # the index is the original indexes
+    # the columns are: predicted classes, boolean column to identify correct/incorrect predictions, original timestamps    
+    pred_classes_test = build_pred_class_test(pred_classes_test_ND, pred_classes_test_AD, test_ND, test_AD, df)
 
     # Detect the false positive of the anomalous points, that are the false negatives of normal points
     detect_AD_false_positives(pred_classes_test.loc[test_ND.index], df.iloc[df_AD_indexes], DELTA_TIME_BEFORE_ANOMALY)

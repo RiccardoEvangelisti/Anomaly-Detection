@@ -229,3 +229,21 @@ def detect_AD_false_positives(pred_classes_test_ND: pd.DataFrame, df_AD: pd.Data
             print(
                 f"ANOMALY PREDICTED AT: {fp.timestamp}, FIRST REAL ANOMALY AT: {anomaly_after_fp.iloc[0].timestamp} ({anomaly_after_fp.iloc[0].timestamp - fp.timestamp} before)"
             )
+
+
+def build_pred_class_test(pred_classes_test_ND, pred_classes_test_AD, test_ND, test_AD, df):
+    pred_classes_test = (
+        pd.concat(
+            [
+                pd.DataFrame(pred_classes_test_ND, index=test_ND.index),
+                pd.DataFrame(pred_classes_test_AD, index=test_AD.index),
+            ]
+        )
+        .sort_index()
+        .rename(columns={0: "nagiosdrained"})
+    )
+    pred_classes_test["is_correct"] = (
+        pred_classes_test["nagiosdrained"] == df.loc[pred_classes_test.index, "nagiosdrained"]
+    )
+    pred_classes_test["timestamp"] = df.loc[pred_classes_test.index, "timestamp"]
+    return pred_classes_test
