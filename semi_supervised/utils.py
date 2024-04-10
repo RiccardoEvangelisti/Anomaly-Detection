@@ -102,7 +102,6 @@ def model_definition(n_features: int, train_ND: pd.DataFrame, val_ND: pd.DataFra
         batch_size=BATCH_SIZE,
         shuffle=True,
         validation_data=(val_ND, val_ND),
-        # sample_weight=np.asarray(active_idle), # not used for now
         verbose=0,
     )
     return history, autoencoder
@@ -139,7 +138,7 @@ def calculate_threshold(val_ND: np.ndarray, decoded_val_ND: np.ndarray, val_AD: 
 
     # for each percentage
     for n_perc in range(n_perc_min, n_perc_max + 1):
-        # Returns the q-th percentile of "max_errors_list_valid_ND", as the value q/100 of the way from the minimum to the maximum of a *sorte* copy of the list. This function is the same as the median if q=50, the same as the minimum if q=0 and the same as the maximum if q=100.
+        # Returns the q-th percentile of "max_errors_list_valid_ND", as the value q/100 of the way from the minimum to the maximum of a *sorted* copy of the list. This function is the same as the median if q=50, the same as the minimum if q=0 and the same as the maximum if q=100.
         error_threshold = np.percentile(max_errors_list_valid_ND, n_perc)
 
         predictions = []
