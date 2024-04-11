@@ -6,5 +6,5 @@ The study focuses on using **Autoencoder Neural Networks** for **Anomaly Detecti
 - _Data_Exploration.ipynb_ contains the analysis and resampling of the original data
 - The original data is downloadable [here](https://zenodo.org/records/7590583)
 - _semi_supervised/_ folder contains the program
-- _documentation/_ folder contains papers on the topic and code examples
+- _papers/_ folder contains articles on the topic and code examples
 - _query_tool_ is a python module, necessary for manipulating the original data
